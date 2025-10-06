@@ -3,34 +3,89 @@
 <head>
   <meta charset="utf-8" />
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  <title>Bayar Rp1 (QRIS) → Nyalakan LED</title>
-  <!-- Snap JS production -->
-  <script src="https://app.midtrans.com/snap/snap.js"
-          data-client-key="{{ config('midtrans.client_key') }}"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hydro Smart — Otomatisasi Pengisian Air Minum Berbasis IoT</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        colors: { bg:"#0b1026", card:"#111735", border:"#22306b", primary:"#4aa3ff", accent:"#00d4ff", text:"#e8ecff" }
+      }}
+    }
+  </script>
   <style>
-    body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:40px}
-    button{padding:12px 18px;border-radius:10px;border:1px solid #ddd;cursor:pointer}
+    body{
+      color:#e8ecff;
+      background:
+        radial-gradient(1200px 600px at 80% -20%, #224bd433 0%, transparent 60%),
+        radial-gradient(900px 600px at 0% 0%, #00d4ff22 0%, transparent 55%),
+        linear-gradient(180deg, #081022, #0b1026 60%);
+    }
+    .cardish{background:linear-gradient(180deg,#0f1633,#0b1026);box-shadow:0 10px 30px #0008, inset 0 1px 0 #ffffff07}
+    .pill{border:1px solid #22306b;background:#ffffff12;color:#cfe3ff}
+    .ml-option{background:linear-gradient(180deg,#121b42,#0d1433);border:1px solid #22306b}
+    .ml-option:hover{transform:translateY(-2px);background:linear-gradient(180deg,#152254,#10183e)}
   </style>
 </head>
-<body>
-  <h2>Nyalakan Relay 5 Detik — Rp1 (QRIS)</h2>
-  <p>Tekan tombol lalu scan QRIS.</p>
-  <button id="payBtn">Bayar QRIS</button>
+<body class="min-h-screen bg-bg">
+  <header class="sticky top-0 z-40 backdrop-blur bg-[#0b1026e6] border-b border-border">
+    <div class="max-w-5xl mx-auto px-5 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl grid place-items-center shadow-inner"
+             style="background:radial-gradient(circle at 70% 30%, #00d4ff, #4aa3ff)">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+              </svg>
+        </div>
+        <div>
+          <div class="font-bold tracking-wide">Hydro <span class="text-accent">Smart</span></div>
+          <div class="text-sm text-[#a8b3ff]">Otomatisasi Pengisian Air Minum Berbasis IoT</div>
+        </div>
+      </div>
+      <span class="pill inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs">Beranda</span>
+    </div>
+  </header>
 
-  <script>
-    document.getElementById('payBtn').addEventListener('click', async () => {
-      const csrf = document.querySelector('meta[name=csrf-token]').getAttribute('content');
-      const res  = await fetch('{{ route('pay') }}', {
-        method: 'POST', headers: {'Content-Type':'application/json','X-CSRF-TOKEN': csrf}, body: '{}'
-      });
-      const { token } = await res.json();
-      window.snap.pay(token, {
-        onSuccess:   (r)=>console.log('success', r),
-        onPending:   (r)=>console.log('pending', r),
-        onError:     (r)=>console.error('error', r),
-        onClose:     ()=>console.warn('closed')
-      });
-    });
-  </script>
+  <main class="max-w-5xl mx-auto px-5 py-8">
+    <div class="grid md:grid-cols-2 gap-5">
+      <section class="cardish border border-border rounded-2xl p-6">
+        <div class="inline-flex pill rounded-full px-3 py-2 text-xs mb-3">Pilih Volume</div>
+        <h1 class="text-2xl md:text-3xl font-bold">Pilih Volume Air</h1>
+        <p class="text-[#a8b3ff] mt-2">Sentuh salah satu ukuran untuk melihat detail & harga.</p>
+      </section>
+
+      <section class="cardish border border-border rounded-2xl p-6 flex flex-col gap-4">
+        <div class="flex items-center justify-between">
+          <h3 class="font-semibold">Volume Tersedia</h3>
+          <span class="text-[#a8b3ff] text-sm">Klik “Pilih” untuk lanjut</span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-2 gap-3">
+          @foreach(collect($pricing)->keys()->sort() as $ml)
+            @php $price = $pricing[$ml]; @endphp
+            <div class="ml-option rounded-2xl p-4">
+              <div class="flex items-center justify-between gap-2">
+                <div>
+                  <div class="text-xl font-bold">{{ $ml }} ml</div>
+                  <div class="text-[#b7c7ff] font-semibold">
+                    Rp {{ number_format($price,0,',','.') }}
+                  </div>
+                </div>
+                <a href="{{ route('detail', ['ml'=>$ml]) }}"
+                   class="rounded-lg px-3 py-2 text-sm pill bg-gradient-to-b from-[#58b1ff] to-[#4aa3ff] text-[#0b1026] shadow-[0_8px_24px_#4aa3ff55] font-semibold">
+                  Pilih
+                </a>
+              </div>
+            </div>
+          @endforeach
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="border-t border-border py-4 text-center text-[#a8b3ff]">
+    © {{ date('Y') }} Hydro Smart • UI Smart Drinking. Dibuat Tim Inovasi Teknologi Metatech.
+  </footer>
 </body>
 </html>

@@ -6,11 +6,37 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Carbon\Carbon;
 
 class PaymentController extends Controller
 {
+    private function pricing(): array {
+        return [
+            200 => 500,
+            300 => 700,
+            500 => 1000,
+            700 => 1300,
+            1000 => 1500,
+            1500 => 2000,
+        ];
+    }
+
     public function showPayPage() {
-        return view('pay');
+        return view('pay', ['pricing' => $this->pricing()]);
+    }
+
+    public function showDetail(int $ml) {
+        $pricing = $this->pricing();
+        abort_unless(array_key_exists($ml, $pricing), 404);
+
+        $price   = $pricing[$ml];
+        $estTime = max(4, (int) round($ml / 50));
+
+        return view('detail', [
+            'ml'      => $ml,
+            'price'   => $price,
+            'estTime' => $estTime,
+        ]);
     }
 
     public function createTransaction(Request $request) {
@@ -20,17 +46,31 @@ class PaymentController extends Controller
         \Midtrans\Config::$isSanitized  = true;
         \Midtrans\Config::$is3ds        = true;
 
-        $orderId = 'LED-'.now()->format('YmdHis').'-'.random_int(1000,9999);
+        $pricing = $this->pricing();
+
+        $ml = (int) $request->input('ml', 0);
+        if (!array_key_exists($ml, $pricing)) {
+            return response()->json(['error' => 'Pilihan volume tidak valid'], 422);
+        }
+        $amount = $pricing[$ml];
+
+        $orderId = 'Hydro-'.now()->format('YmdHis').'-'.random_int(1000,9999);
 
         $params = [
             'transaction_details' => [
                 'order_id'     => $orderId,
-                'gross_amount' => 1,
+                'gross_amount' => $amount,
             ],
             // Tampilkan hanya QRIS di Snap
             'enabled_payments' => ['other_qris'],
+            'item_details' => [[
+                'id'       => 'HYDRO-'.$ml,
+                'price'    => $amount,
+                'quantity' => 1,
+                'name'     => "Pengisian Air {$ml}ml",
+            ]],
             'customer_details' => [
-                'first_name' => 'LED Control',
+                'first_name' => 'Pembeli',
                 'email'      => 'user@example.com',
             ],
             'callbacks' => [
@@ -42,6 +82,30 @@ class PaymentController extends Controller
         return response()->json(['token' => $snapToken]);
     }
 
+    public function showSuccess(Request $request) {
+        $orderId = $request->query('order_id');
+        $ml      = (int) $request->query('ml');
+        $price   = (int) $request->query('price');
+        $estTime = (int) $request->query('estTime', 5);
+        $tsRaw   = $request->query('ts');
+
+        try {
+            $ts = Carbon::parse($tsRaw);
+        } catch (\Throwable $e) {
+            $ts = now();
+        }
+
+        $ts = $ts->timezone(config('app.timezone', 'Asia/Jakarta'));
+
+        return view('success', [
+            'order_id' => $orderId,
+            'ml'       => $ml,
+            'price'    => $price,
+            'estTime'  => $estTime,
+            'ts'       => $ts,
+        ]);
+    }    
+
     // Webhook dari Midtrans
     public function handleNotification(Request $request) {
         $serverKey = config('midtrans.server_key');
@@ -52,6 +116,8 @@ class PaymentController extends Controller
         $statusCode  = (string) $request->input('status_code', '');
         $grossAmount = (string) $request->input('gross_amount', '');
         $signature   = (string) $request->input('signature_key', '');
+        $trxStatus = (string) $request->input('transaction_status', '');
+        $fraud     = $request->input('fraud_status');
     
         // Validasi signature
         $expected = hash('sha512', $orderId.$statusCode.$grossAmount.$serverKey);
@@ -60,9 +126,6 @@ class PaymentController extends Controller
             return response()->json(['message' => 'invalid signature'], 403);
         }
     
-        $trxStatus = (string) $request->input('transaction_status', '');
-        $fraud     = $request->input('fraud_status');
-    
         Log::info('Midtrans parsed status', [
             'orderId' => $orderId,
             'transaction_status' => $trxStatus,
@@ -70,7 +133,6 @@ class PaymentController extends Controller
         ]);
     
         // eksekusi pada settlement/capture
-        $okStatuses = ['capture','settlement'];
         if (in_array($trxStatus, ['capture','settlement'], true) && ($fraud === 'accept' || $fraud === null)) {
             $cacheKey = 'midtrans_done_'.$orderId;
             if (!Cache::add($cacheKey, true, now()->addHours(24))) {
@@ -90,7 +152,7 @@ class PaymentController extends Controller
                 Log::error('Device trigger failed', ['url'=>$deviceUrl,'error'=>$e->getMessage()]);
             }
         } else {
-            Log::info('Payment not settled yet, skip', ['trxStatus'=>$trxStatus,'fraud'=>$fraud]);
+            Log::info('Payment not settled yet, skip', compact('orderId','trxStatus','fraud'));
         }        
     
         return response()->json(['message' => 'ok']);
