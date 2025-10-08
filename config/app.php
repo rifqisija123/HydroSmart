@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Laravel'),
+    'name' => env('APP_NAME', 'Hydro Smart'),
 
     /*
     |--------------------------------------------------------------------------
@@ -52,7 +52,7 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'https://bdea84d3b265.ngrok-free.app'),
+    'url' => env('APP_URL', 'https://17425501f50d.ngrok-free.app'),
 
     /*
     |--------------------------------------------------------------------------

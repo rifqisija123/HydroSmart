@@ -12,7 +12,7 @@ class PaymentController extends Controller
 {
     private function pricing(): array {
         return [
-            200 => 500,
+            200 => 1,
             300 => 700,
             500 => 1000,
             700 => 1300,
@@ -104,7 +104,23 @@ class PaymentController extends Controller
             'estTime'  => $estTime,
             'ts'       => $ts,
         ]);
-    }    
+    }
+
+    public function devicePoll(Request $request) {
+        $token = (string) $request->query('token','');
+        if ($token === '' || $token !== 'RELAY123') {
+            return response()->json(['ok'=>false,'error'=>'bad token'], 403);
+        }
+    
+        // Ambil & hapus tugas atomically
+        $key = "device_job_{$token}";
+        $job = Cache::pull($key); // null kalau tidak ada
+    
+        if (!$job) {
+            return response()->json(['ok'=>true,'job'=>null]); // tidak ada tugas
+        }
+        return response()->json(['ok'=>true,'job'=>$job]); // contoh: ['ms'=>5000]
+    }
 
     // Webhook dari Midtrans
     public function handleNotification(Request $request) {
@@ -140,22 +156,17 @@ class PaymentController extends Controller
                 return response()->json(['message' => 'ok (duplicate)']);
             }
 
-            $deviceUrl = config('midtrans.device_url');
-            try {
-                $resp = Http::timeout(8)->retry(2, 200)->get($deviceUrl);
-                Log::info('Device trigger response', [
-                    'url'    => $deviceUrl,
-                    'status' => $resp->status(),
-                    'body'   => $resp->body(),
-                ]);
-            } catch (\Throwable $e) {
-                Log::error('Device trigger failed', ['url'=>$deviceUrl,'error'=>$e->getMessage()]);
-            }
+            $deviceToken = 'RELAY123';
+            $jobKey      = "device_job_{$deviceToken}";
+            $jobPayload  = ['ms' => 5000, 'at' => now()->toIso8601String(), 'order_id'=>$orderId];
+
+            Cache::put($jobKey, $jobPayload, now()->addMinutes(2));
+            Log::info('Enqueued device job', ['key'=>$jobKey,'payload'=>$jobPayload]);
         } else {
             Log::info('Payment not settled yet, skip', compact('orderId','trxStatus','fraud'));
         }        
     
         return response()->json(['message' => 'ok']);
     }
-    
+ 
 }

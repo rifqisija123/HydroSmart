@@ -41,6 +41,22 @@
       background:#ffffff12;
       color:#cfe3ff;
     }
+    /* Hilangkan scrollbar untuk area yang bisa digeser horizontal */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Animasi ceklist: pop in lalu tenang, ulang tiap 3s */
+    @keyframes popPulse {
+      0%   { transform: scale(0.6); opacity: 0; filter: drop-shadow(0 0 0 rgba(34,197,94,0)); }
+      10%  { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 8px 24px rgba(34,197,94,.45)); }
+      18%  { transform: scale(1.0);  opacity: 1; }
+      70%  { transform: scale(1.0);  opacity: 1; }
+      100% { transform: scale(0.98); opacity: 1; filter: drop-shadow(0 4px 12px rgba(34,197,94,.25)); }
+    }
+    .animate-pop-3s {
+      animation: popPulse 3s ease-out infinite;
+      transform-origin: center;
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col bg-bg">
@@ -51,9 +67,10 @@
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl grid place-items-center shadow-inner"
              style="background:radial-gradient(circle at 70% 30%, #00d4ff, #4aa3ff)">
-             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-              </svg>
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+          </svg>
         </div>
         <div>
           <div class="font-bold tracking-wide">Hydro <span class="text-accent">Smart</span></div>
@@ -67,51 +84,55 @@
   </header>
 
   {{-- MAIN CONTENT --}}
-  <main class="flex-grow max-w-md w-full mx-auto px-6 py-12">
+  <main class="flex-grow w-full mx-auto px-6 py-12 max-w-lg md:max-w-xl">
     <div class="cardish border border-border rounded-2xl p-8 text-center">
 
-      {{-- Icon Success --}}
-      <div class="mx-auto w-16 h-16 rounded-full bg-green-500 flex items-center justify-center mb-4">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      {{-- Icon Success + animasi --}}
+      <div class="mx-auto w-16 h-16 rounded-full bg-green-500 flex items-center justify-center mb-4 animate-pop-3s">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white"
+             fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M5 13l4 4L19 7" />
         </svg>
       </div>
 
       <h1 class="text-2xl font-bold mb-2">Pembayaran Berhasil!</h1>
       <p class="text-[#a8b3ff] mb-6">Terima kasih telah menggunakan <b>Hydro Smart</b>.</p>
 
-      {{-- CARD DETAIL PEMBAYARAN --}}
+      {{-- DETAIL: grid 2 kolom sejajar & nowrap --}}
       <div class="text-left bg-[#0b1638]/60 border border-[#22306b] rounded-2xl p-5 mb-6">
-        <div class="flex justify-between py-1">
-          <span class="text-[#a8b3ff]">Kode Transaksi</span>
-          <span class="font-semibold text-primary">{{ $order_id ?? '—' }}</span>
+        <div class="grid grid-cols-[150px,1fr] gap-x-4 items-start py-1">
+          <span class="text-[#a8b3ff] whitespace-nowrap">Kode Transaksi</span>
+          <span class="font-semibold text-primary break-all whitespace-normal">
+            {{ $order_id ?? '—' }}
+          </span>
+        </div>        
+        <div class="grid grid-cols-[150px,1fr] gap-x-4 items-center py-1">
+          <span class="text-[#a8b3ff] whitespace-nowrap">Volume</span>
+          <span class="font-semibold whitespace-nowrap overflow-x-auto no-scrollbar">{{ $ml ?? '—' }} ml</span>
         </div>
-        <div class="flex justify-between py-1">
-          <span class="text-[#a8b3ff]">Volume</span>
-          <span class="font-semibold">{{ $ml ?? '—' }} ml</span>
+        <div class="grid grid-cols-[150px,1fr] gap-x-4 items-center py-1">
+          <span class="text-[#a8b3ff] whitespace-nowrap">Metode Pembayaran</span>
+          <span class="font-semibold whitespace-nowrap">QRIS</span>
         </div>
-        <div class="flex justify-between py-1">
-          <span class="text-[#a8b3ff]">Metode Pembayaran</span>
-          <span class="font-semibold">QRIS</span>
+        <div class="grid grid-cols-[150px,1fr] gap-x-4 items-center py-1">
+          <span class="text-[#a8b3ff] whitespace-nowrap">Total Pembayaran</span>
+          <span class="font-semibold whitespace-nowrap">Rp {{ number_format($price ?? 0, 0, ',', '.') }}</span>
         </div>
-        <div class="flex justify-between py-1">
-          <span class="text-[#a8b3ff]">Total Pembayaran</span>
-          <span class="font-semibold">Rp {{ number_format($price ?? 0, 0, ',', '.') }}</span>
+        <div class="grid grid-cols-[150px,1fr] gap-x-4 items-center py-1">
+          <span class="text-[#a8b3ff] whitespace-nowrap">Waktu</span>
+          <span class="font-semibold whitespace-nowrap">{{ $ts->format('d M Y, H:i:s') }}</span>
         </div>
-        <div class="flex justify-between py-1">
-            <span class="text-[#a8b3ff]">Waktu</span>
-            <span class="font-semibold">
-              {{ $ts->format('d M Y, H:i:s') }}
-            </span>
-        </div>          
       </div>
 
       {{-- INSTRUKSI PENGAMBILAN --}}
       <div class="text-left bg-[#0b1d40]/70 border border-[#2b3e7a] rounded-2xl p-4 mb-6">
         <div class="flex items-start gap-2">
           <div class="text-sky-400 mt-[3px]">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12A9 9 0 113 12a9 9 0 0118 0z" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12A9 9 0 113 12a9 9 0 0118 0z" />
             </svg>
           </div>
           <p class="text-sm text-[#cfd9ff]">
