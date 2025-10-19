@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Hydro Smart — Otomatisasi Pengisian Air Minum Berbasis IoT</title>
+  <title>WADAH — Otomatisasi Pengisian Air Minum Berbasis IoT</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -75,18 +75,15 @@
   <header class="sticky top-0 z-40 backdrop-blur bg-[#0b1026e6] border-b border-border">
     <div class="max-w-5xl mx-auto px-5 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl grid place-items-center shadow-inner"
-             style="background:radial-gradient(circle at 70% 30%, #00d4ff, #4aa3ff)">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-              </svg>
-        </div>
+        <img src="{{ asset('img/wadahlogo.png') }}" alt="Water Automation Dispenser Aman Hemat" width="60">
         <div>
-          <div class="font-bold tracking-wide">Hydro <span class="text-accent">Smart</span></div>
+          <div class="font-bold tracking-wide">Inovasi <span class="text-accent">Wadah</span></div>
           <div class="text-sm text-[#a8b3ff]">Otomatisasi Pengisian Air Minum Berbasis IoT</div>
         </div>
       </div>
-      <span class="pill inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs">Beranda</span>
+      <a href="/admin/login">
+        <span class="pill inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs">Admin</span>
+      </a>
     </div>
   </header>
 
@@ -112,19 +109,19 @@
           <span class="text-[#a8b3ff] text-sm">Klik “Pilih” untuk lanjut</span>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           @foreach(collect($pricing)->keys()->sort() as $ml)
             @php $price = $pricing[$ml]; @endphp
             <div class="ml-option rounded-2xl p-4">
-              <div class="flex items-center justify-between gap-2">
-                <div>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="text-center w-full">
                   <div class="text-xl font-bold">{{ $ml }} ml</div>
                   <div class="text-[#b7c7ff] font-semibold">
                     Rp {{ number_format($price,0,',','.') }}
                   </div>
                 </div>
                 <a href="{{ route('detail', ['ml'=>$ml]) }}"
-                   class="rounded-lg px-3 py-2 text-sm pill bg-gradient-to-b from-[#58b1ff] to-[#4aa3ff] text-[#0b1026] shadow-[0_8px_24px_#4aa3ff55] font-semibold">
+                   class="rounded-lg px-3 py-2 text-sm pill bg-gradient-to-b from-[#58b1ff] to-[#4aa3ff] text-[#0b1026] shadow-[0_8px_24px_#4aa3ff55] font-semibold block w-full sm:w-auto mt-3 sm:mt-0 text-center">
                   Pilih
                 </a>
               </div>
@@ -136,7 +133,7 @@
   </main>
 
   <footer class="border-t border-border py-4 text-center text-[#a8b3ff]">
-    © {{ date('Y') }} Hydro Smart • UI Smart Drinking. Dibuat Tim Inovasi Teknologi Metatech.
+    © {{ date('Y') }} WADAH • UI Smart Drinking. Dibuat Tim Inovasi Teknologi Metatech.
   </footer>
 </body>
 </html>

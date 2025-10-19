@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pembayaran Berhasil — Hydro Smart</title>
+  <title>Pembayaran Berhasil — WADAH</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -65,15 +65,9 @@
   <header class="sticky top-0 z-40 backdrop-blur bg-[#0b1026e6] border-b border-border">
     <div class="max-w-5xl mx-auto px-5 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl grid place-items-center shadow-inner"
-             style="background:radial-gradient(circle at 70% 30%, #00d4ff, #4aa3ff)">
-          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-          </svg>
-        </div>
+        <img src="{{ asset('img/wadahlogo.png') }}" alt="Water Automation Dispenser Aman Hemat" width="60">
         <div>
-          <div class="font-bold tracking-wide">Hydro <span class="text-accent">Smart</span></div>
+          <div class="font-bold tracking-wide">Inovasi <span class="text-accent">Wadah</span></div>
           <div class="text-sm text-[#a8b3ff]">Pembayaran Success</div>
         </div>
       </div>
@@ -97,7 +91,7 @@
       </div>
 
       <h1 class="text-2xl font-bold mb-2">Pembayaran Berhasil!</h1>
-      <p class="text-[#a8b3ff] mb-6">Terima kasih telah menggunakan <b>Hydro Smart</b>.</p>
+      <p class="text-[#a8b3ff] mb-6">Terima kasih telah menggunakan <b>WADAH</b>.</p>
 
       {{-- DETAIL: grid 2 kolom sejajar & nowrap --}}
       <div class="text-left bg-[#0b1638]/60 border border-[#22306b] rounded-2xl p-5 mb-6">
@@ -153,7 +147,7 @@
 
   {{-- FOOTER --}}
   <footer class="border-t border-border py-4 text-center text-[#a8b3ff] mt-auto">
-    © {{ date('Y') }} Hydro Smart • UI Smart Drinking. Dibuat Tim Inovasi Teknologi Metatech.
+    © {{ date('Y') }} WADAH • UI Smart Drinking. Dibuat Tim Inovasi Teknologi Metatech.
   </footer>
 
 </body>

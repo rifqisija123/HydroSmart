@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Hydro Smart'),
+    'name' => env('APP_NAME', 'WADAH'),
 
     /*
     |--------------------------------------------------------------------------
@@ -52,7 +52,7 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'https://17425501f50d.ngrok-free.app'),
+    'url' => env('APP_URL', 'https://9011b7bf076d.ngrok-free.app'),
 
     /*
     |--------------------------------------------------------------------------

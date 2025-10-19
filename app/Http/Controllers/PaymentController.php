@@ -12,17 +12,15 @@ class PaymentController extends Controller
 {
     private function pricing(): array {
         return [
+            100 => 1,
             200 => 1,
-            300 => 700,
-            500 => 1000,
-            700 => 1300,
-            1000 => 1500,
-            1500 => 2000,
+            300 => 1,
+            400 => 1,
         ];
     }
 
     public function showPayPage() {
-        return view('pay', ['pricing' => $this->pricing()]);
+        return view('index', ['pricing' => $this->pricing()]);
     }
 
     public function showDetail(int $ml) {
@@ -54,7 +52,7 @@ class PaymentController extends Controller
         }
         $amount = $pricing[$ml];
 
-        $orderId = 'Hydro-'.now()->format('YmdHis').'-'.random_int(1000,9999);
+        $orderId = 'Wadah-'.now()->format('YmdHis').'-'.$ml.'-'.random_int(1000,9999);
 
         $params = [
             'transaction_details' => [
@@ -64,7 +62,7 @@ class PaymentController extends Controller
             // Tampilkan hanya QRIS di Snap
             'enabled_payments' => ['other_qris'],
             'item_details' => [[
-                'id'       => 'HYDRO-'.$ml,
+                'id'       => 'WADAH-'.$ml,
                 'price'    => $amount,
                 'quantity' => 1,
                 'name'     => "Pengisian Air {$ml}ml",
@@ -106,20 +104,23 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function devicePoll(Request $request) {
-        $token = (string) $request->query('token','');
-        if ($token === '' || $token !== 'RELAY123') {
-            return response()->json(['ok'=>false,'error'=>'bad token'], 403);
+    public function devicePoll(Request $request)
+    {
+        $token = (string) $request->query('token', '');
+        // Validasi token sederhana
+        if ($token !== 'RELAY123') {
+            return response()->json(['ok' => false, 'error' => 'bad token'], 403);
         }
-    
-        // Ambil & hapus tugas atomically
+
+        // Ambil & hapus tugas atomik
         $key = "device_job_{$token}";
-        $job = Cache::pull($key); // null kalau tidak ada
-    
-        if (!$job) {
-            return response()->json(['ok'=>true,'job'=>null]); // tidak ada tugas
-        }
-        return response()->json(['ok'=>true,'job'=>$job]); // contoh: ['ms'=>5000]
+        $job = Cache::pull($key); // null jika tidak ada
+
+        // Bentuk respons
+        return response()->json([
+            'ok'  => true,
+            'job' => $job ?: null,   // contoh: ['ml' => 200, 'order_id' => '...']
+        ]);
     }
 
     // Webhook dari Midtrans
@@ -156,11 +157,20 @@ class PaymentController extends Controller
                 return response()->json(['message' => 'ok (duplicate)']);
             }
 
+            $ml = 0;
+            if (preg_match('/^Wadah-\d{14}-(\d+)-\d{4}$/', $orderId, $m)) {
+                $ml = (int) $m[1];
+            }
+
             $deviceToken = 'RELAY123';
             $jobKey      = "device_job_{$deviceToken}";
-            $jobPayload  = ['ms' => 5000, 'at' => now()->toIso8601String(), 'order_id'=>$orderId];
+            $jobPayload  = [
+                'ml'       => $ml,                 // 100/200/300/400
+                'order_id' => $orderId,
+                'at'       => now()->toIso8601String(),
+            ];
 
-            Cache::put($jobKey, $jobPayload, now()->addMinutes(2));
+            Cache::put($jobKey, $jobPayload, now()->addMinutes(2)); // TTL 2 menit
             Log::info('Enqueued device job', ['key'=>$jobKey,'payload'=>$jobPayload]);
         } else {
             Log::info('Payment not settled yet, skip', compact('orderId','trxStatus','fraud'));
@@ -168,5 +178,5 @@ class PaymentController extends Controller
     
         return response()->json(['message' => 'ok']);
     }
- 
+    
 }
