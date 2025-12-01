@@ -17,7 +17,7 @@ class UserSeeder extends Seeder
         User::create([
             'name' => 'Admin',
             'email' => 'adminwadah@smkn9bekasi.id',
-            'password' => Hash::make('admin123'), // password di-hash otomatis
+            'password' => Hash::make('adminwadah54321'), // password di-hash otomatis
         ]);
     }
 }

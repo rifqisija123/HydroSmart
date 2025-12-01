@@ -7,52 +7,62 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
+use App\Models\DrinkPrice;
+use App\Models\Transaction;
 
 class PaymentController extends Controller
 {
-    private function pricing(): array {
-        return [
-            100 => 1,
-            200 => 1,
-            300 => 1,
-            400 => 1,
-        ];
+    private function pricing(string $drink): array {
+        return DrinkPrice::where('drink', $drink)
+            ->pluck('price', 'ml')
+            ->toArray();
     }
 
-    public function showPayPage() {
-        return view('index', ['pricing' => $this->pricing()]);
+    public function showDrinkPage() {
+        return view('index');
     }
 
-    public function showDetail(int $ml) {
-        $pricing = $this->pricing();
+    public function showPayPage($drink) {
+        $drink = strtolower($drink);
+        return view('volume', [
+            'pricing' => $this->pricing($drink),
+            'drink' => $drink
+        ]);
+    }
+
+    public function showDetail($drink, int $ml) {
+        $drink = strtolower($drink);
+        $pricing = $this->pricing($drink);
         abort_unless(array_key_exists($ml, $pricing), 404);
 
         $price   = $pricing[$ml];
-        $estTime = max(4, (int) round($ml / 50));
+        $estTime = (int) round($ml / 50);
 
         return view('detail', [
+            'drink'   => strtolower($drink),
             'ml'      => $ml,
             'price'   => $price,
             'estTime' => $estTime,
         ]);
     }
 
-    public function createTransaction(Request $request) {
+    public function createTransaction(Request $request, $drink) {
         // Midtrans config
         \Midtrans\Config::$serverKey    = config('midtrans.server_key');
         \Midtrans\Config::$isProduction = config('midtrans.is_production');
         \Midtrans\Config::$isSanitized  = true;
         \Midtrans\Config::$is3ds        = true;
 
-        $pricing = $this->pricing();
+        $pricing = $this->pricing($drink);
 
         $ml = (int) $request->input('ml', 0);
         if (!array_key_exists($ml, $pricing)) {
             return response()->json(['error' => 'Pilihan volume tidak valid'], 422);
         }
         $amount = $pricing[$ml];
+        $drink = strtolower($drink);
 
-        $orderId = 'Wadah-'.now()->format('YmdHis').'-'.$ml.'-'.random_int(1000,9999);
+        $orderId = "WADAH-{$drink}-".now()->format('YmdHis')."-{$ml}-".random_int(1000,9999);
 
         $params = [
             'transaction_details' => [
@@ -62,17 +72,17 @@ class PaymentController extends Controller
             // Tampilkan hanya QRIS di Snap
             'enabled_payments' => ['other_qris'],
             'item_details' => [[
-                'id'       => 'WADAH-'.$ml,
+                'id'       => "WADAH-{$drink}-{$ml}",
                 'price'    => $amount,
                 'quantity' => 1,
-                'name'     => "Pengisian Air {$ml}ml",
+                'name'     => "Pengisian {$drink} {$ml}ml",
             ]],
             'customer_details' => [
                 'first_name' => 'Pembeli',
                 'email'      => 'user@example.com',
             ],
             'callbacks' => [
-                'finish' => config('app.url').'/?finish=1',
+                'finish' => route('success'),
             ],
         ];
 
@@ -80,8 +90,24 @@ class PaymentController extends Controller
         return response()->json(['token' => $snapToken]);
     }
 
+    public function devicePoll(Request $request)
+    {
+        $drink = $request->query('drink', 'kopi');
+        $file  = storage_path("app/device_job_{$drink}.json");
+
+        if (!file_exists($file)) {
+            return response()->json(['ok' => true, 'job' => null]);
+        }
+
+        $data = json_decode(file_get_contents($file), true);
+        unlink($file); // hapus setelah dibaca agar hanya sekali dijalankan
+        return response()->json(['ok' => true, 'job' => $data]);
+    }
+
     public function showSuccess(Request $request) {
         $orderId = $request->query('order_id');
+        $trx = Transaction::where('order_id', $orderId)->first();
+
         $ml      = (int) $request->query('ml');
         $price   = (int) $request->query('price');
         $estTime = (int) $request->query('estTime', 5);
@@ -96,30 +122,13 @@ class PaymentController extends Controller
         $ts = $ts->timezone(config('app.timezone', 'Asia/Jakarta'));
 
         return view('success', [
-            'order_id' => $orderId,
+            // 'order_id' => $orderId,
             'ml'       => $ml,
             'price'    => $price,
             'estTime'  => $estTime,
             'ts'       => $ts,
-        ]);
-    }
-
-    public function devicePoll(Request $request)
-    {
-        $token = (string) $request->query('token', '');
-        // Validasi token sederhana
-        if ($token !== 'RELAY123') {
-            return response()->json(['ok' => false, 'error' => 'bad token'], 403);
-        }
-
-        // Ambil & hapus tugas atomik
-        $key = "device_job_{$token}";
-        $job = Cache::pull($key); // null jika tidak ada
-
-        // Bentuk respons
-        return response()->json([
-            'ok'  => true,
-            'job' => $job ?: null,   // contoh: ['ml' => 200, 'order_id' => '...']
+            'issuer'   => $trx->issuer ?? null,
+            'trx'      => $trx,
         ]);
     }
 
@@ -133,50 +142,70 @@ class PaymentController extends Controller
         $statusCode  = (string) $request->input('status_code', '');
         $grossAmount = (string) $request->input('gross_amount', '');
         $signature   = (string) $request->input('signature_key', '');
-        $trxStatus = (string) $request->input('transaction_status', '');
-        $fraud     = $request->input('fraud_status');
     
         // Validasi signature
         $expected = hash('sha512', $orderId.$statusCode.$grossAmount.$serverKey);
         if (!hash_equals($expected, $signature)) {
-            Log::warning('Midtrans signature mismatch', compact('orderId','statusCode','grossAmount'));
+            Log::warning('Midtrans signature mismatch', compact('orderId'));
             return response()->json(['message' => 'invalid signature'], 403);
         }
     
-        Log::info('Midtrans parsed status', [
-            'orderId' => $orderId,
-            'transaction_status' => $trxStatus,
-            'fraud_status'       => $fraud
-        ]);
-    
-        // eksekusi pada settlement/capture
-        if (in_array($trxStatus, ['capture','settlement'], true) && ($fraud === 'accept' || $fraud === null)) {
-            $cacheKey = 'midtrans_done_'.$orderId;
-            if (!Cache::add($cacheKey, true, now()->addHours(24))) {
-                Log::info('Skip duplicate execution', compact('orderId','trxStatus'));
-                return response()->json(['message' => 'ok (duplicate)']);
-            }
+        $trxRaw  = $request->input('transaction_status');
+        $fraud   = $request->input('fraud_status');
 
-            $ml = 0;
-            if (preg_match('/^Wadah-\d{14}-(\d+)-\d{4}$/', $orderId, $m)) {
-                $ml = (int) $m[1];
-            }
+        $status = match ($trxRaw) {
+            'capture', 'settlement' => 'success',
+            'pending'               => 'pending',
+            'deny', 'expire', 'cancel' => 'failed',
+            default                 => 'failed',
+        };
 
-            $deviceToken = 'RELAY123';
-            $jobKey      = "device_job_{$deviceToken}";
-            $jobPayload  = [
-                'ml'       => $ml,                 // 100/200/300/400
-                'order_id' => $orderId,
-                'at'       => now()->toIso8601String(),
+        //generate code transactions
+        $code = $status === 'success'
+        ? ('WADAH' . random_int(10000, 99999))
+        : null;
+
+        // Ambil issuer
+        $issuer = $request->input('issuer')
+                ?? $request->input('acquirer')
+                ?? ($request->input('payment_type') === 'qris' ? null : null);
+
+        // Ambil drink dan ml dari orderId
+        $ml = 0; 
+        $drink = 'kopi';
+        if (preg_match('/WADAH-(kopi|teh)-\d{14}-(\d+)-\d{4}/i', $orderId, $m)) {
+            $drink = strtolower($m[1]);
+            $ml = (int) $m[2];
+        }
+
+        // Simpan ke DB
+        Transaction::updateOrCreate(
+            ['order_id' => $orderId],
+            [
+                'drink'   => $drink,
+                'ml'      => $ml,
+                'amount'  => (int) $grossAmount,
+                'status'  => $status,
+                'issuer'  => $issuer,
+                'paid_at' => now(),
+                'code_transactions' => $code ?? null,
+            ]
+        );
+
+        // Jika success → buat job untuk ESP
+        if ($status === 'success') {
+            $job = [
+                'ml'     => $ml,
+                'drink'  => $drink,
+                'at'     => now()->toIso8601String(),
             ];
 
-            Cache::put($jobKey, $jobPayload, now()->addMinutes(2)); // TTL 2 menit
-            Log::info('Enqueued device job', ['key'=>$jobKey,'payload'=>$jobPayload]);
-        } else {
-            Log::info('Payment not settled yet, skip', compact('orderId','trxStatus','fraud'));
-        }        
-    
+            $file = storage_path("app/device_job_{$drink}.json");
+            file_put_contents($file, json_encode($job));
+
+            Log::info('✅ File job stored', compact('file','job'));
+        }
+
         return response()->json(['message' => 'ok']);
     }
-    
 }

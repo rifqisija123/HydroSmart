@@ -4,7 +4,10 @@
   <meta charset="utf-8" />
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>WADAH — Detail Pilihan {{ $ml }} ml</title>
+  <title>WADAH — Detail {{ ucfirst($drink) }} {{ $ml }} ml</title>
+
+  <link rel="icon" type="image/png" href="{{ asset('img/wadahcircle.png') }}">
+  <link rel="apple-touch-icon" href="{{ asset('img/wadahcircle.png') }}">
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -31,6 +34,38 @@
           data-client-key="{{ config('midtrans.client_key') }}"></script>
 </head>
 <body class="min-h-screen bg-bg flex flex-col">
+
+  <!-- PRELOADER -->
+  <div id="preloader"
+       style="
+         position: fixed;
+         top: 0; left: 0;
+         width: 100%; height: 100vh;
+         background: rgba(0,0,0,0.65);
+         backdrop-filter: blur(2px);
+         display: flex;
+         flex-direction: column;
+         align-items: center;
+         justify-content: center;
+         z-index: 9999;
+       ">
+       
+      <img src="{{ asset('img/wadahcircle.png') }}"
+           alt="Loading Wadah..."
+           style="width:120px; height:120px; animation:spin 2s linear infinite;">
+
+      <p style="color:#cfe3ff; margin-top:20px; font-size:18px; letter-spacing:1px;">
+          Loading...
+      </p>
+  </div>
+
+  <style>
+    @keyframes spin {
+        0%   { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+  </style>
+
   <header class="sticky top-0 z-40 backdrop-blur bg-[#0b1026e6] border-b border-border">
     <div class="max-w-5xl mx-auto px-5 py-4 flex items-center justify-between">
       <div class="flex items-center gap-3">
@@ -40,7 +75,7 @@
           <div class="text-sm text-[#a8b3ff]">Detail Pilihan</div>
         </div>
       </div>
-      <a href="{{ route('home') }}" class="pill inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs">← Kembali</a>
+      <a href="{{ route('volume', ['drink' => $drink]) }}" class="pill inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs">← Kembali</a>
     </div>
   </header>
 
@@ -49,8 +84,18 @@
       <div class="grid md:grid-cols-2 gap-6">
         <div>
           <div class="text-sm text-[#a8b3ff]">Detail Pilihan</div>
-          <div class="text-4xl font-extrabold mt-1">{{ $ml }} ml</div>
-          <div class="mt-2 text-2xl font-bold text-primary">
+          <div class="mt-1">
+            <div class="text-4xl font-extrabold tracking-wide">
+              {{ ucfirst($drink) }}
+            </div>
+            <div class="text-base text-[#a8b3ff] font-medium mt-2">
+              Pilihan Volume:
+            </div>
+            <div class="text-3xl font-extrabold text-primary mt-1">
+              {{ $ml }} ml
+            </div>
+          </div>
+          <div class="mt-2 text-xl font-bold text-primary">
             Rp {{ number_format($price,0,',','.') }}
           </div>
           <div class="text-[#a8b3ff] mt-2">
@@ -72,20 +117,63 @@
         </div>
 
         <div class="grid place-items-center">
-          <svg viewBox="0 0 180 180" width="200" height="200" aria-hidden="true">
+          <svg viewBox="0 0 240 260" width="230" height="260" aria-hidden="true">
             <defs>
-              <linearGradient id="lg" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stop-color="#71d8ff"/>
-                <stop offset="100%" stop-color="#0088ff"/>
+              <linearGradient id="panelBg" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#17305c"/>
+                <stop offset="100%" stop-color="#0b1026"/>
               </linearGradient>
+          
+              <linearGradient id="glow" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#4aa3ff" stop-opacity="0.5"/>
+                <stop offset="100%" stop-color="#0088ff" stop-opacity="0.2"/>
+              </linearGradient>
+          
+              <linearGradient id="cupShine" x1="0" x2="1" y1="0" y2="0">
+                <stop offset="0%" stop-color="#ffffff33"/>
+                <stop offset="100%" stop-color="#ffffff00"/>
+              </linearGradient>
+          
             </defs>
-            <rect rx="20" ry="20" x="10" y="10" width="160" height="160" fill="url(#lg)" opacity=".25" stroke="#3a5fff" stroke-opacity=".5"/>
-            <path d="M60 35 h60 a12 12 0 0 1 12 12 v86 a12 12 0 0 1 -12 12 h-60 a12 12 0 0 1 -12 -12 v-86 a12 12 0 0 1 12 -12 z" fill="#0b1026" stroke="#4aa3ff"/>
-            <rect x="66" y="50" width="48" height="60" rx="6" fill="#071024" stroke="#2349ff"/>
-            <rect x="76" y="58" width="28" height="44" fill="#00b1ff" opacity=".5"/>
-            <circle cx="90" cy="130" r="6" fill="#00c389"/>
-            <text x="90" y="155" text-anchor="middle" font-size="12" fill="#9cc3ff">Simulasi Dispenser</text>
-          </svg>
+          
+            <rect x="10" y="10" width="220" height="240" rx="18" fill="url(#panelBg)"
+                  stroke="#2f4d8a" stroke-width="2" />
+          
+            <rect x="10" y="10" width="220" height="240" rx="18" fill="url(#glow)" opacity="0.25" />
+          
+            <rect x="20" y="20" width="200" height="45" rx="8"
+                  fill="#0f1c3d" stroke="#3b6dd6" stroke-opacity="0.6" />
+          
+            <text x="120" y="48" text-anchor="middle"
+                  fill="#cfe3ff" font-size="12" font-weight="600">
+                Simulasi Dispenser
+            </text>
+          
+            <rect x="30" y="75" width="180" height="140" rx="12"
+                  fill="#ffffff08" stroke="#395fb0" stroke-opacity="0.4"/>
+          
+            <rect x="30" y="200" width="180" height="20" rx="6"
+                  fill="#1b2d55" stroke="#508cff" stroke-width="1.2" />
+          
+            <rect x="105" y="130" width="40" height="50" rx="6"
+                  fill="#b8dcff22" stroke="#65b6ff" />
+          
+            <rect x="105" y="130" width="12" height="50" rx="6"
+                  fill="url(#cupShine)" />
+          
+            <rect x="135" y="95" width="4" height="20" fill="#66c8ff" />
+          
+            <circle cx="137" cy="122" r="4" fill="#00d4ff" opacity="0.8">
+              <animate attributeName="cy" from="122" to="140" dur="0.9s" repeatCount="indefinite" />
+              <animate attributeName="opacity" from="0.9" to="0" dur="0.9s" repeatCount="indefinite" />
+            </circle>
+          
+            <!-- Coffee icon (left decoration) -->
+            <text x="50" y="120" font-size="28" opacity="0.25">☕</text>
+          
+            <!-- Tea icon (right decoration) -->
+            <text x="170" y="120" font-size="28" opacity="0.25">🍃</text>
+          </svg>          
         </div>
       </div>
     </div>
@@ -102,7 +190,7 @@
     document.getElementById('btnPay').addEventListener('click', async ()=>{
       try{
         const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        const res  = await fetch('{{ route('pay') }}', {
+        const res  = await fetch('{{ route('pay', ['drink' => $drink]) }}', {
           method: 'POST',
           headers: {'Content-Type':'application/json','X-CSRF-TOKEN': csrf},
           body: JSON.stringify({ ml: {{ $ml }} })
@@ -115,26 +203,41 @@
 
         // Snap QRIS
         window.snap.pay(token, {
-            onSuccess: (r)=>{
-                const ts =
-                    r.settlement_time ||
-                    r.transaction_time ||
-                    new Date().toISOString();
-
-                const params = new URLSearchParams({
-                    order_id: r.order_id,
-                    ml: String({{ $ml }}),
-                    price: String({{ $price }}),
-                    estTime: String({{ $estTime }}),
-                    ts,
-                });
-
-                window.location.href = `/success?${params.toString()}`;
-            },
-          onPending: (r)=> console.log('pending', r),
-          onError:   (r)=> { console.error('error', r); showErr('Pembayaran gagal. Coba lagi.'); },
-          onClose:   ()=> console.warn('closed')
+          onSuccess: function(result) {
+            console.log("Success", result);
+            handleRedirect(result);
+          },
+          onPending: function(result) {
+            console.log("Pending", result);
+            // Jangan redirect ke success di sini! cukup tampilkan notifikasi
+            showErr('Pembayaran masih menunggu, silakan selesaikan di aplikasi pembayaran Anda.');
+          },
+          onError: function(result) {
+            console.error("Error", result);
+            showErr('Terjadi kesalahan saat proses pembayaran.');
+          },
+          onClose: function() {
+            console.warn('QRIS ditutup tanpa pembayaran');
+            const params = new URLSearchParams({
+              drink: "{{ $drink }}",
+              ml: String({{ $ml }})
+            });
+            window.location.href = `/close?${params.toString()}`;
+          }
         });
+
+        function handleRedirect(r) {
+          const ts = r.settlement_time || r.transaction_time || new Date().toISOString();
+          const params = new URLSearchParams({
+              order_id: r.order_id,
+              ml: String({{ $ml }}),
+              price: String({{ $price }}),
+              estTime: String({{ $estTime }}),
+              ts,
+              drink: "{{ $drink }}",
+          });
+          window.location.href = `/success?${params.toString()}`;
+        }
       }catch(e){
         console.error(e);
         showErr(e.message || 'Terjadi kesalahan jaringan.');
@@ -146,6 +249,18 @@
       box.textContent = msg;
       box.classList.remove('hidden');
     }
+  </script>
+  <script>
+    window.addEventListener('load', () => {
+      const p = document.getElementById('preloader');
+
+      setTimeout(() => {
+          p.style.opacity = "0";
+          p.style.transition = "opacity 0.5s ease";
+
+          setTimeout(() => p.style.display = "none", 500);
+      }, 1000); 
+    });
   </script>
 </body>
 </html>

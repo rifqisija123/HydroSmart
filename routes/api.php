@@ -12,5 +12,5 @@ Route::get('/user', function (Request $request) {
 Route::post('/midtrans/notification', [PaymentController::class, 'handleNotification'])
     ->name('midtrans.notification');
 
-Route::get('/device/poll', [PaymentController::class, 'devicePoll'])
-    ->name('device.poll');
+//api untuk esp8266
+Route::get('/device/poll', [PaymentController::class, 'devicePoll']);
