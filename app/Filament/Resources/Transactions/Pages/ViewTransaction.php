@@ -13,12 +13,11 @@ class ViewTransaction extends ViewRecord
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        $data['transaction_type'] = 'QRIS';
         $data['volume'] = $data['ml'] . ' ml';
         $data['drink']  = ucfirst($data['drink']);
         $data['issuer'] = $data['status'] === 'success'
-        ? ($data['issuer'] ?? '-')
-        : '-';
+            ? ($data['issuer'] ?? '-')
+            : '-';
         $data['status']  = ucfirst($data['status']);
         // $data['code_transactions'] = $data['code_transactions'] ?? '-';
 

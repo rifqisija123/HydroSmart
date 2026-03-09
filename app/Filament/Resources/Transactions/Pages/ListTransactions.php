@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Transactions\Pages;
 
 use App\Filament\Resources\Transactions\TransactionResource;
+use App\Models\Transaction;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,25 +19,42 @@ class ListTransactions extends ListRecords
         return [
             // EXPORT PDF
             Action::make('export_pdf')
-                ->label('Export PDF')
+                ->label('Cetak PDF')
                 ->icon('heroicon-o-document-arrow-down')
                 ->color('danger')
-                ->action('exportPdf'),
+                ->action(function () {
+                    if (Transaction::count() === 0) {
+                        $this->dispatch('swal:no-transactions', message: 'Belum ada transaksi untuk di cetak ke PDF.');
+                        return;
+                    }
+                    return $this->exportPdf();
+                }),
 
             // EXPORT EXCEL
             Action::make('export_excel')
-                ->label('Export Excel')
+                ->label('Cetak Excel')
                 ->icon('heroicon-o-table-cells')
                 ->color('success')
-                ->action('exportExcel'),
+                ->action(function () {
+                    if (Transaction::count() === 0) {
+                        $this->dispatch('swal:no-transactions', message: 'Belum ada transaksi untuk di cetak ke Excel.');
+                        return;
+                    }
+                    return $this->exportExcel();
+                }),
 
             // PRINT
             Action::make('print')
                 ->label('Print')
                 ->icon('heroicon-o-printer')
                 ->color('gray')
-                ->url(fn() => route('transactions.print', request()->query()))
-                ->openUrlInNewTab(),
+                ->action(function () {
+                    if (Transaction::count() === 0) {
+                        $this->dispatch('swal:no-transactions', message: 'Belum ada transaksi untuk di-print.');
+                        return;
+                    }
+                    $this->redirect(route('transactions.print', request()->query()));
+                }),
         ];
     }
 
@@ -67,8 +85,6 @@ class ListTransactions extends ListRecords
     protected function getFilteredRecords(): Builder
     {
         return $this->getTableQuery()->clone()
-            ->when(request('tableFilters'), function ($query) {
-                
-            });
+            ->when(request('tableFilters'), function ($query) {});
     }
 }

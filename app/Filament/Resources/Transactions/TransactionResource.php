@@ -14,7 +14,6 @@ use Filament\Resources\Resource;
 use Filament\Tables\Table;
 use Filament\Schemas\Schema;
 use Filament\Actions\ViewAction;
-use Filament\Actions\ButtonAction;
 use Carbon\Carbon;
 
 class TransactionResource extends Resource
@@ -36,7 +35,6 @@ class TransactionResource extends Resource
 
                 Tables\Columns\TextColumn::make('transaction_type')
                     ->label('Transaction Type')
-                    ->default('QRIS')
                     ->badge()
                     ->color('info'),
 
@@ -55,7 +53,7 @@ class TransactionResource extends Resource
                     ->label('Kode Transaksi')
                     ->sortable()
                     ->searchable()
-                    ->formatStateUsing(fn ($state) => $state ?? '-'),
+                    ->formatStateUsing(fn($state) => $state ?? '-'),
             ])
 
             ->filters([
@@ -100,36 +98,7 @@ class TransactionResource extends Resource
                     ->url(fn($record) => TransactionResource::getUrl('show', ['record' => $record]))
                     ->color('primary')
                     ->icon('heroicon-o-eye'),
-
-                    ButtonAction::make('triggerPump')
-                    ->label('Start Pompa')
-                    ->icon('heroicon-o-bolt')
-                    ->color('warning')
-                    ->requiresConfirmation()
-                    ->modalHeading('Konfirmasi Pengisian')
-                    ->modalDescription(fn($record) =>
-                        "Apakah Anda yakin ingin melanjutkan pengisian untuk minuman "
-                        . ucfirst($record->drink) . " sebanyak {$record->ml} ml?"
-                    )
-                    ->action(function ($record) {
-
-                        $file = storage_path("app/device_job_{$record->drink}.json");
-
-                        $job = [
-                            'ml'     => $record->ml,
-                            'drink'  => $record->drink,
-                            'at'     => now()->toIso8601String(),
-                        ];
-
-                        file_put_contents($file, json_encode($job));
-
-                        \Filament\Notifications\Notification::make()
-                            ->title('Perintah Terkirim')
-                            ->body("ESP akan segera memproses pengisian {$record->drink} dengan {$record->ml} ml.")
-                            ->success()
-                            ->send();
-                    }),
-            ]);            
+            ]);
     }
 
     public static function getPages(): array
@@ -153,16 +122,18 @@ class TransactionResource extends Resource
                     TextInput::make('ml')->label('Volume (ml)')->disabled(),
                     TextInput::make('drink')->label('Minuman')->disabled(),
                     TextInput::make('amount')->label('Total Pembayaran')->prefix('Rp')
-                    ->formatStateUsing(fn ($state) =>
-                        number_format($state, 0, ',', '.')
-                    )->disabled(),
+                        ->formatStateUsing(
+                            fn($state) =>
+                            number_format($state, 0, ',', '.')
+                        )->disabled(),
                     TextInput::make('issuer')->label('Issuer')->disabled(),
                     TextInput::make('created_at')->label('Date & Time')
-                    ->formatStateUsing(fn ($state) =>
-                        Carbon::parse($state)
-                        ->timezone(config('app.timezone'))
-                        ->format('d M Y H:i:s')
-                    )->disabled(),
+                        ->formatStateUsing(
+                            fn($state) =>
+                            Carbon::parse($state)
+                                ->timezone(config('app.timezone'))
+                                ->format('d M Y H:i:s')
+                        )->disabled(),
                 ])
                 ->columns([
                     'default' => 1,
